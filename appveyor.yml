@@ -1,5 +1,5 @@
-# AppVeyor Configuration v4.4 - Final Artifact Path
-# This is the definitive, working configuration.
+# AppVeyor Configuration v5.0 - Clean Workspace
+# This is the final, recommended configuration.
 
 image: Visual Studio 2022
 
@@ -7,21 +7,31 @@ environment:
   APP_URL: "https://github.com/Izaacapp/SilverBulletPro-Docker/releases/download/blessed/SilverBulletPro-v1.5.8.rar"
 
 install:
+  # --- BEST PRACTICE: Create a clean workspace directory ---
+  - ps: mkdir app_workspace
+  - ps: cd app_workspace
+
+  # 1. Download the application archive into the workspace.
   - ps: echo "Downloading application..."
   - ps: Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar"
+
+  # 2. Extract the archive.
   - ps: echo "Extracting application..."
   - ps: 7z x app.rar -aoa -y
+
+  # 3. Install the required .NET 8 Desktop Runtime.
   - ps: echo "Installing .NET 8 Desktop Runtime..."
   - ps: Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
   - ps: ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
 
 build_script:
+  # Verify that the main executable exists inside our clean workspace.
   - cmd: echo "Setup complete. Verifying executable exists..."
-  - cmd: dir SilverBulletPro.exe
+  - cmd: dir app_workspace\SilverBulletPro.exe
 
 artifacts:
   # --- THE FINAL FIX ---
-  # We provide the full, explicit path to the project directory.
-  # AppVeyor clones projects into C:\projects\<repository-name> by default.
-  - path: 'C:\projects\silverbulletpro-docker'
+  # Package the entire clean workspace as a single, neat zip file.
+  - path: 'app_workspace'
     name: SilverBulletPro-Prepared
+    type: Zip
