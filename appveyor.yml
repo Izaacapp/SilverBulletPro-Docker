@@ -1,4 +1,5 @@
-# AppVeyor Configuration v5.1 - Verified Working Version
+# AppVeyor Configuration v5.2 - Corrected Single-Archive Artifact
+
 image: Visual Studio 2022
 
 environment:
@@ -13,17 +14,19 @@ install:
   - ps: Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar"
   - ps: 7z x app.rar -aoa -y
 
-  # Install .NET Runtime (stays in global location)
+  # Install .NET Runtime
   - ps: Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
   - ps: ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
 
 build_script:
-  # Verify executable - NOTE: Now in workspace root
+  # Verify executable
   - ps: Test-Path "SilverBulletPro.exe"
   - ps: dir
 
 artifacts:
-  # Package the workspace contents (not the folder itself)
-  - path: 'app_workspace\*'
+  # --- THE FINAL CORRECTION ---
+  # This tells AppVeyor to take the contents of the 'app_workspace' folder
+  # and package them into a single zip file.
+  - path: app_workspace
     name: SilverBulletPro-Prepared
     type: Zip
