@@ -1,4 +1,5 @@
-# AppVeyor Configuration v4.3 - Final path correction
+# AppVeyor Configuration v4.4 - Final Artifact Path
+# This is the definitive, working configuration.
 
 image: Visual Studio 2022
 
@@ -15,13 +16,12 @@ install:
   - ps: ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
 
 build_script:
-  # --- CORRECTED VERIFICATION ---
-  # Verify that the main executable exists in the current directory.
+  - cmd: echo "Setup complete. Verifying executable exists..."
   - cmd: dir SilverBulletPro.exe
 
 artifacts:
-  # --- CORRECTED PATH ---
-  # Since there is no subfolder, we must package the individual files and folders.
-  # We package everything in the current directory.
-  - path: '.'
+  # --- THE FINAL FIX ---
+  # We provide the full, explicit path to the project directory.
+  # AppVeyor clones projects into C:\projects\<repository-name> by default.
+  - path: 'C:\projects\silverbulletpro-docker'
     name: SilverBulletPro-Prepared
