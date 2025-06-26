@@ -1,0 +1,27 @@
+# This tells AppVeyor to use a Windows machine with Visual Studio 2022.
+# This environment already includes most of what you need for .NET.
+image: Visual Studio 2022
+
+# This section runs before the build starts. It's where we prepare the environment.
+install:
+  # This command will download and install the specific .NET 8 Desktop Runtime
+  # that your application's error message said it needed.
+  - ps: Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
+  - ps: ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
+
+# This section defines how to "build" your app. Since your app is already
+# pre-compiled, we just need to confirm the .NET environment is working.
+build_script:
+  - cmd: echo "Build step - checking .NET version"
+  - cmd: dotnet --version
+
+# This section would normally run automated tests. We can skip this
+# for now, but it's where you would add testing scripts.
+test_script:
+  - cmd: echo "Test step - no tests configured"
+
+# This is an important step. After the build, this tells AppVeyor
+# to package up your entire application folder so you can download it.
+artifacts:
+  - path: 'SilverBulletPro-v1.5.8'
+    name: SilverBulletPro
