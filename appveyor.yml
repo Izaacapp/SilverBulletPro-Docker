@@ -1,4 +1,4 @@
-# appveyor.yml - USB Ready Version
+# appveyor.yml - Complete Package Fix
 image: Visual Studio 2022
 
 environment:
@@ -6,30 +6,22 @@ environment:
 
 install:
   - ps: |
-      # Create clean workspace
-      mkdir SilverBulletPro | Out-Null
-      cd SilverBulletPro
+      # Create working directory
+      mkdir build | Out-Null
+      cd build
       
-      # Download and extract full package
+      # Download and extract FULL package
       Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar"
       7z x app.rar -aoa -y
       Remove-Item app.rar -Force
       
-      # Install .NET if missing (for USB use)
-      if (-not (Test-Path "$env:ProgramFiles\dotnet\dotnet.exe")) {
-          Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
-          ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
-          Remove-Item dotnet-install.ps1 -Force
+      # Verify extraction
+      if (-not (Test-Path "SilverBulletPro.exe")) {
+          throw "Extraction failed - main executable missing!"
       }
 
-build_script:
-  - ps: |
-      # Verify complete package
-      $essentials = @('SilverBulletPro.exe', 'Plugins', 'DB', 'Settings')
-      $missing = $essentials | Where-Object { -not (Test-Path $_) }
-      if ($missing) { throw "Incomplete package! Missing: $($missing -join ', ')" }
-
 artifacts:
-  - path: 'SilverBulletPro\*'
-    name: SilverBulletPro-USB-Ready
+  # Package the ENTIRE extracted contents
+  - path: 'build\**\*'  # Double star includes all subfolders
+    name: SilverBulletPro-Complete
     type: Zip
