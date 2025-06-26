@@ -2,10 +2,10 @@
 SilverBulletPro-v1.5.8/
 
 # Also ignore our local data folders
-sbp_db/
-sbp_plugins/
-sbp_settings/
-sbp_tessdata/
+db/
+plugins/
+settings/
+tessdata/
 windows_vm_storage/
 
 # Ignore system files
