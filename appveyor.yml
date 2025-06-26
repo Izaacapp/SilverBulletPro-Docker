@@ -1,45 +1,35 @@
-# AppVeyor Configuration v3.0
-# This version dynamically fetches the direct download link from GoFile.
+# AppVeyor Configuration v4.0 - Final
+# Downloads the application archive directly from your GitHub Release.
 
+# Use a standard Windows machine with Visual Studio 2022.
 image: Visual Studio 2022
 
-# Environment variables
+# Environment variables to hold the download link.
 environment:
-  # The GoFile share ID from your link (the part after /d/)
-  GOFILE_ID: "7RM8kN"
+  # This is the direct download link you created.
+  APP_URL: "https://github.com/Izaacapp/SilverBulletPro-Docker/releases/download/blessed/SilverBulletPro-v1.5.8.rar"
 
+# This section runs before the build starts.
 install:
-  # 1. Get the direct download link from the GoFile API
-  - ps: |
-      echo "Fetching direct download link from GoFile API..."
-      $apiUrl = "https://api.gofile.io/contents/$env:GOFILE_ID?wt=4v2O64k5d3q6z5s4"
-      $apiResponse = Invoke-RestMethod -Uri $apiUrl
-      $directLink = $apiResponse.data.contents | Where-Object { $_.name -like '*.rar' } | Select-Object -ExpandProperty link -First 1
-      if (!$directLink) {
-          echo "ERROR: Could not find direct download link in API response."
-          exit 1
-      }
-      echo "Direct link found: $directLink"
-      $env:DIRECT_DOWNLOAD_LINK = $directLink
+  # 1. Download the application archive from your release.
+  - ps: echo "Downloading application from GitHub Release..."
+  - ps: Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar"
 
-  # 2. Download the application using the direct link
-  - ps: echo "Downloading application..."
-  - ps: Invoke-WebRequest -Uri $env:DIRECT_DOWNLOAD_LINK -OutFile "app.rar"
-
-  # 3. Extract the archive
+  # 2. Extract the archive using the pre-installed 7-Zip.
   - ps: echo "Extracting application..."
-  - ps: 7z x app.rar -o"SilverBulletPro-v1.5.8"
+  - ps: 7z x app.rar
 
-  # 4. Install the required .NET Desktop Runtime
+  # 3. Install the required .NET 8 Desktop Runtime.
   - ps: echo "Installing .NET 8 Desktop Runtime..."
   - ps: Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
   - ps: ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
 
+# A simple script to confirm the setup is complete.
 build_script:
-  - cmd: echo "Setup complete. Listing extracted files..."
+  - cmd: echo "Setup complete. Verifying extracted folder..."
   - cmd: dir SilverBulletPro-v1.5.8
 
+# This tells AppVeyor to package the folder we just extracted as a downloadable artifact.
 artifacts:
-  # Package the final, prepared application folder
   - path: 'SilverBulletPro-v1.5.8'
-    name: SilverBulletPro
+    name: SilverBulletPro-Prepared
