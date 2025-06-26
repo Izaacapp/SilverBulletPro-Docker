@@ -1,26 +1,41 @@
-# AppVeyor Configuration v5.4 - Schema-Validated
+# AppVeyor Configuration v5.5 - Final Optimized Version
 image: Visual Studio 2022
 
 environment:
   APP_URL: "https://github.com/Izaacapp/SilverBulletPro-Docker/releases/download/blessed/SilverBulletPro-v1.5.8.rar"
 
 install:
-  - ps: mkdir app_workspace | Out-Null
-  - ps: cd app_workspace
-  - ps: Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar"
-  - ps: 7z x app.rar -aoa -y
-  - ps: Remove-Item app.rar -Force
-  - ps: Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
-  - ps: ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
-  - ps: Remove-Item dotnet-install.ps1 -Force
+  # Setup workspace
+  - ps: |
+      mkdir app_workspace | Out-Null
+      cd app_workspace
+      
+      # Download and extract
+      Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar"
+      7z x app.rar -aoa -y
+      Remove-Item app.rar -Force
+      
+      # Install .NET
+      Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
+      ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
+      Remove-Item dotnet-install.ps1 -Force
 
 build_script:
+  # File verification
   - ps: |
-      $requiredFiles = @("SilverBulletPro.exe", "SilverBulletPro.dll", "appsettings.json")
-      $missingFiles = $requiredFiles | Where-Object { -not (Test-Path $_) }
-      if ($missingFiles) { throw "Missing required files: $($missingFiles -join ', ')" }
+      $requiredFiles = @(
+        "SilverBulletPro.exe",
+        "SilverBulletPro.dll", 
+        "appsettings.json",
+        "nbloader.dll",
+        "SilverBulletPro.deps.json"
+      )
+      if (($missingFiles = $requiredFiles | Where-Object { -not (Test-Path $_) })) {
+        throw "Missing required files: $($missingFiles -join ', ')"
+      }
 
 artifacts:
+  # Package all workspace contents
   - path: 'app_workspace\*'
-    name: SilverBulletPro-Prepared
+    name: SilverBulletPro-Release
     type: Zip
