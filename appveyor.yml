@@ -1,27 +1,45 @@
-# This tells AppVeyor to use a Windows machine with Visual Studio 2022.
-# This environment already includes most of what you need for .NET.
+# AppVeyor Configuration v3.0
+# This version dynamically fetches the direct download link from GoFile.
+
 image: Visual Studio 2022
 
-# This section runs before the build starts. It's where we prepare the environment.
+# Environment variables
+environment:
+  # The GoFile share ID from your link (the part after /d/)
+  GOFILE_ID: "7RM8kN"
+
 install:
-  # This command will download and install the specific .NET 8 Desktop Runtime
-  # that your application's error message said it needed.
+  # 1. Get the direct download link from the GoFile API
+  - ps: |
+      echo "Fetching direct download link from GoFile API..."
+      $apiUrl = "https://api.gofile.io/contents/$env:GOFILE_ID?wt=4v2O64k5d3q6z5s4"
+      $apiResponse = Invoke-RestMethod -Uri $apiUrl
+      $directLink = $apiResponse.data.contents | Where-Object { $_.name -like '*.rar' } | Select-Object -ExpandProperty link -First 1
+      if (!$directLink) {
+          echo "ERROR: Could not find direct download link in API response."
+          exit 1
+      }
+      echo "Direct link found: $directLink"
+      $env:DIRECT_DOWNLOAD_LINK = $directLink
+
+  # 2. Download the application using the direct link
+  - ps: echo "Downloading application..."
+  - ps: Invoke-WebRequest -Uri $env:DIRECT_DOWNLOAD_LINK -OutFile "app.rar"
+
+  # 3. Extract the archive
+  - ps: echo "Extracting application..."
+  - ps: 7z x app.rar -o"SilverBulletPro-v1.5.8"
+
+  # 4. Install the required .NET Desktop Runtime
+  - ps: echo "Installing .NET 8 Desktop Runtime..."
   - ps: Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
   - ps: ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
 
-# This section defines how to "build" your app. Since your app is already
-# pre-compiled, we just need to confirm the .NET environment is working.
 build_script:
-  - cmd: echo "Build step - checking .NET version"
-  - cmd: dotnet --version
+  - cmd: echo "Setup complete. Listing extracted files..."
+  - cmd: dir SilverBulletPro-v1.5.8
 
-# This section would normally run automated tests. We can skip this
-# for now, but it's where you would add testing scripts.
-test_script:
-  - cmd: echo "Test step - no tests configured"
-
-# This is an important step. After the build, this tells AppVeyor
-# to package up your entire application folder so you can download it.
 artifacts:
+  # Package the final, prepared application folder
   - path: 'SilverBulletPro-v1.5.8'
     name: SilverBulletPro
