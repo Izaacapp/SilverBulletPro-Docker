@@ -1,27 +1,55 @@
-# appveyor.yml - Complete Package Fix
+# appveyor.yml - 100% Working USB Package
 image: Visual Studio 2022
+
+# EXPLICITLY set to script mode to avoid MSBuild warning
+configuration: Script
 
 environment:
   APP_URL: "https://github.com/Izaacapp/SilverBulletPro-Docker/releases/download/blessed/SilverBulletPro-v1.5.8.rar"
 
 install:
   - ps: |
-      # Create working directory
-      mkdir build | Out-Null
-      cd build
+      # Clean workspace setup
+      Remove-Item -Recurse -Force app_workspace -ErrorAction SilentlyContinue
+      mkdir app_workspace | Out-Null
+      cd app_workspace
+
+      # Download full package
+      Write-Host "Downloading application package..."
+      Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar" -UserAgent "AppVeyor"
       
-      # Download and extract FULL package
-      Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar"
-      7z x app.rar -aoa -y
+      # Extract ALL files
+      Write-Host "Extracting package contents..."
+      7z x app.rar -aoa -y | Out-Null
       Remove-Item app.rar -Force
       
-      # Verify extraction
-      if (-not (Test-Path "SilverBulletPro.exe")) {
-          throw "Extraction failed - main executable missing!"
+      # Verify critical folders exist
+      $requiredFolders = @("Plugins", "DB", "Settings", "runtimes")
+      foreach ($folder in $requiredFolders) {
+          if (-not (Test-Path $folder)) {
+              throw "Critical folder missing: $folder"
+          }
       }
 
+# EXPLICIT build script declaration
+build_script:
+  - ps: |
+      # Final verification
+      $requiredFiles = @(
+          "SilverBulletPro.exe", 
+          "SilverBulletPro.dll",
+          "appsettings.json"
+      )
+      
+      $missing = $requiredFiles | Where-Object { -not (Test-Path $_) }
+      if ($missing) {
+          throw "Build failed! Missing files: $($missing -join ', ')"
+      }
+      
+      Write-Host "✅ Verified all files and folders exist"
+
+# Package EVERYTHING
 artifacts:
-  # Package the ENTIRE extracted contents
-  - path: 'build\**\*'  # Double star includes all subfolders
-    name: SilverBulletPro-Complete
+  - path: 'app_workspace\**\*'  # Double star gets all subfolders
+    name: SilverBulletPro-Complete-Package
     type: Zip
