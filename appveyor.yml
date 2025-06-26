@@ -1,35 +1,32 @@
-# AppVeyor Configuration v4.0 - Final
-# Downloads the application archive directly from your GitHub Release.
+# AppVeyor Configuration v4.1 - With non-interactive extraction
 
-# Use a standard Windows machine with Visual Studio 2022.
 image: Visual Studio 2022
 
-# Environment variables to hold the download link.
 environment:
-  # This is the direct download link you created.
   APP_URL: "https://github.com/Izaacapp/SilverBulletPro-Docker/releases/download/blessed/SilverBulletPro-v1.5.8.rar"
 
-# This section runs before the build starts.
 install:
-  # 1. Download the application archive from your release.
+  # 1. Download the application archive
   - ps: echo "Downloading application from GitHub Release..."
   - ps: Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar"
 
-  # 2. Extract the archive using the pre-installed 7-Zip.
+  # 2. Extract the archive silently
   - ps: echo "Extracting application..."
-  - ps: 7z x app.rar
+  # --- THIS IS THE CORRECTED COMMAND ---
+  # -aoa: Overwrite all existing files without prompting.
+  # -y: Assume Yes to all other prompts.
+  - ps: 7z x app.rar -aoa -y
 
-  # 3. Install the required .NET 8 Desktop Runtime.
+  # 3. Install the required .NET 8 Desktop Runtime
   - ps: echo "Installing .NET 8 Desktop Runtime..."
   - ps: Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
   - ps: ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
 
-# A simple script to confirm the setup is complete.
 build_script:
   - cmd: echo "Setup complete. Verifying extracted folder..."
   - cmd: dir SilverBulletPro-v1.5.8
 
-# This tells AppVeyor to package the folder we just extracted as a downloadable artifact.
 artifacts:
+  # Package the final, prepared application folder
   - path: 'SilverBulletPro-v1.5.8'
     name: SilverBulletPro-Prepared
