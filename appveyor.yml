@@ -1,4 +1,5 @@
-# AppVeyor Configuration v4.1 - With non-interactive extraction
+# AppVeyor Configuration v4.2 - Final
+# Corrects the artifact path to account for the nested folder from the .rar archive.
 
 image: Visual Studio 2022
 
@@ -6,27 +7,21 @@ environment:
   APP_URL: "https://github.com/Izaacapp/SilverBulletPro-Docker/releases/download/blessed/SilverBulletPro-v1.5.8.rar"
 
 install:
-  # 1. Download the application archive
-  - ps: echo "Downloading application from GitHub Release..."
+  - ps: echo "Downloading application..."
   - ps: Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar"
-
-  # 2. Extract the archive silently
   - ps: echo "Extracting application..."
-  # --- THIS IS THE CORRECTED COMMAND ---
-  # -aoa: Overwrite all existing files without prompting.
-  # -y: Assume Yes to all other prompts.
   - ps: 7z x app.rar -aoa -y
-
-  # 3. Install the required .NET 8 Desktop Runtime
   - ps: echo "Installing .NET 8 Desktop Runtime..."
   - ps: Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
   - ps: ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
 
 build_script:
   - cmd: echo "Setup complete. Verifying extracted folder..."
-  - cmd: dir SilverBulletPro-v1.5.8
+  # We will now check the nested path to confirm it exists
+  - cmd: dir SilverBulletPro-v1.5.8\SilverBulletPro-v1.5.8
 
 artifacts:
-  # Package the final, prepared application folder
-  - path: 'SilverBulletPro-v1.5.8'
+  # --- THIS IS THE CORRECTED PATH ---
+  # Point to the actual location of the application files.
+  - path: 'SilverBulletPro-v1.5.8\SilverBulletPro-v1.5.8'
     name: SilverBulletPro-Prepared
