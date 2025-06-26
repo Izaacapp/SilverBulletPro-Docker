@@ -557,4 +557,3 @@ SilverBulletPro-Docker
    ├─ leptonica-1.83.1.dll
    └─ tesseract53.dll
 
-```
