@@ -1,5 +1,4 @@
-# AppVeyor Configuration v4.2 - Final
-# Corrects the artifact path to account for the nested folder from the .rar archive.
+# AppVeyor Configuration v4.3 - Final path correction
 
 image: Visual Studio 2022
 
@@ -16,12 +15,13 @@ install:
   - ps: ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
 
 build_script:
-  - cmd: echo "Setup complete. Verifying extracted folder..."
-  # We will now check the nested path to confirm it exists
-  - cmd: dir SilverBulletPro-v1.5.8\SilverBulletPro-v1.5.8
+  # --- CORRECTED VERIFICATION ---
+  # Verify that the main executable exists in the current directory.
+  - cmd: dir SilverBulletPro.exe
 
 artifacts:
-  # --- THIS IS THE CORRECTED PATH ---
-  # Point to the actual location of the application files.
-  - path: 'SilverBulletPro-v1.5.8\SilverBulletPro-v1.5.8'
+  # --- CORRECTED PATH ---
+  # Since there is no subfolder, we must package the individual files and folders.
+  # We package everything in the current directory.
+  - path: '.'
     name: SilverBulletPro-Prepared
