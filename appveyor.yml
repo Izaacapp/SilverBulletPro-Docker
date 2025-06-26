@@ -1,4 +1,4 @@
-# AppVeyor Configuration v5.6 - Production Ready
+# AppVeyor Configuration v6.0 - Gold Master
 image: Visual Studio 2022
 
 environment:
@@ -6,51 +6,59 @@ environment:
 
 install:
   - ps: |
-      # Setup isolated workspace
-      $workspace = "app_workspace"
+      # ===== WORKSPACE SETUP =====
+      $workspace = "sbp_$(Get-Date -Format 'yyyyMMdd')"
       mkdir $workspace | Out-Null
       cd $workspace
-
-      # Download and extract application
-      Write-Host "Downloading application package..."
-      Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar" -UserAgent "AppVeyor"
+      
+      # ===== APPLICATION DEPLOYMENT =====
+      Write-Host "Downloading SilverBulletPro package..."
+      $ProgressPreference = 'SilentlyContinue'
+      Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar" -UserAgent "AppVeyor/SBP"
+      
+      Write-Host "Extracting application files..."
       7z x app.rar -aoa -y | Out-Null
       Remove-Item app.rar -Force
-
-      # Install runtime dependencies
-      Write-Host "Installing .NET 8 Runtime..."
+      
+      # ===== RUNTIME INSTALLATION =====
+      Write-Host "Installing .NET 8 Desktop Runtime..."
       Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
       ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop | Out-Null
       Remove-Item dotnet-install.ps1 -Force
 
 build_script:
   - ps: |
-      # Comprehensive file verification
-      $requiredFiles = @(
-        "SilverBulletPro.exe",
-        "SilverBulletPro.dll",
-        "appsettings.json",
-        "nbloader.dll",
-        "SilverBulletPro.deps.json",
-        "SilverBulletPro.runtimeconfig.json"
-      )
+      # ===== VERIFICATION =====
+      $manifest = @{
+        Executable = "SilverBulletPro.exe"
+        Libraries = @("SilverBulletPro.dll", "nbloader.dll")
+        Configs = @("appsettings.json", "SilverBulletPro.runtimeconfig.json")
+        Dependencies = "SilverBulletPro.deps.json"
+      }
       
-      Write-Host "Verifying required files..."
-      $missing = @()
-      foreach ($file in $requiredFiles) {
-          if (-not (Test-Path $file)) {
-              $missing += $file
-              Write-Warning "Missing file: $file"
+      Write-Host "🔍 Verifying build integrity..."
+      $issues = @()
+      
+      foreach ($category in $manifest.Keys) {
+          $files = $manifest[$category]
+          if ($files -is [string]) { $files = @($files) }
+          
+          foreach ($file in $files) {
+              if (-not (Test-Path $file)) {
+                  $issues += "[$category] $file"
+                  Write-Warning "Missing $category file: $file"
+              }
           }
       }
       
-      if ($missing.Count -gt 0) {
-          throw "Critical files missing: $($missing -join ', ')"
+      if ($issues.Count -gt 0) {
+          Write-Error "Build validation failed!"
+          throw "Missing critical components:`n$($issues -join "`n")"
       }
       
-      Write-Host "All required files verified."
+      Write-Host "All components verified successfully!"
 
 artifacts:
-  - path: 'app_workspace\*'
-    name: SilverBulletPro-Release-Package
+  - path: '$workspace\*'
+    name: SilverBulletPro-v1.5.8
     type: Zip
