@@ -1,4 +1,4 @@
-# AppVeyor Configuration v5.7 - Stable Version
+# appveyor.yml - USB Ready Version
 image: Visual Studio 2022
 
 environment:
@@ -6,39 +6,30 @@ environment:
 
 install:
   - ps: |
-      # Consistent workspace name
-      $workspace = "app_workspace"
-      mkdir $workspace | Out-Null
-      cd $workspace
-
-      # Download and extract
+      # Create clean workspace
+      mkdir SilverBulletPro | Out-Null
+      cd SilverBulletPro
+      
+      # Download and extract full package
       Invoke-WebRequest -Uri $env:APP_URL -OutFile "app.rar"
-      7z x app.rar -aoa -y | Out-Null
+      7z x app.rar -aoa -y
       Remove-Item app.rar -Force
-
-      # Install .NET
-      Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
-      ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop | Out-Null
-      Remove-Item dotnet-install.ps1 -Force
+      
+      # Install .NET if missing (for USB use)
+      if (-not (Test-Path "$env:ProgramFiles\dotnet\dotnet.exe")) {
+          Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
+          ./dotnet-install.ps1 -Channel 8.0 -Runtime windowsdesktop
+          Remove-Item dotnet-install.ps1 -Force
+      }
 
 build_script:
   - ps: |
-      # Basic but reliable verification
-      $requiredFiles = @(
-        "SilverBulletPro.exe",
-        "SilverBulletPro.dll",
-        "appsettings.json",
-        "nbloader.dll",
-        "SilverBulletPro.deps.json"
-      )
-      
-      $missingFiles = $requiredFiles | Where-Object { -not (Test-Path $_) }
-      if ($missingFiles) {
-          throw "Missing files: $($missingFiles -join ', ')"
-      }
+      # Verify complete package
+      $essentials = @('SilverBulletPro.exe', 'Plugins', 'DB', 'Settings')
+      $missing = $essentials | Where-Object { -not (Test-Path $_) }
+      if ($missing) { throw "Incomplete package! Missing: $($missing -join ', ')" }
 
 artifacts:
-  # Fixed path that matches the workspace name
-  - path: 'app_workspace\*'
-    name: SilverBulletPro
+  - path: 'SilverBulletPro\*'
+    name: SilverBulletPro-USB-Ready
     type: Zip
